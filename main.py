@@ -19,11 +19,14 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 import easyocr
 import re
 from util import *
-
+from dotenv import load_dotenv
+load_dotenv()
 
 # ────────────── 환경설정 ──────────────
-USER_EMAIL   = "kycl0131@yonsei.ac.kr"
-APP_PASSWORD = "ybmu hajp jyhh aquh"
+import os
+USER_EMAIL   = os.getenv("GMAIL_USER")
+APP_PASSWORD = os.getenv("GMAIL_PASS")
+
 # QUERY        = "larger:1M"
 QUERY = "in:anywhere"
 
