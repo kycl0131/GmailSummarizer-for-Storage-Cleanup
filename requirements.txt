@@ -1,0 +1,7 @@
+torch
+transformers
+opencv-python
+Pillow
+google-api-python-client
+google-auth
+google-auth-oauthlib
