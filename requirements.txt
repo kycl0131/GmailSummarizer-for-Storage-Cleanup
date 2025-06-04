@@ -1,7 +1,16 @@
-torch
-transformers
-opencv-python
-Pillow
-google-api-python-client
-google-auth
-google-auth-oauthlib
+torch>=1.13.0,<2.0.0
+transformers>=4.52.4,<5.0.0
+tokenizers>=0.21,<0.22
+numpy==1.23.5
+opencv-python>=4.5.5.64
+Pillow>=9.4.0
+
+paddlepaddle-gpu==2.6.0   # GPU 환경용. CPU 전용이면 paddlepaddle==2.6.0 으로 교체
+paddleocr==2.6.3
+
+google-api-python-client>=2.77.0
+google-auth>=2.25.0
+google-auth-oauthlib>=0.8.0
+
+python-dotenv>=1.0.0
+protobuf==3.20.0
