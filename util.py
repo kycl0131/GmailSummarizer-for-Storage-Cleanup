@@ -19,6 +19,8 @@ import numpy as np
 from transformers import BlipProcessor, BlipForConditionalGeneration
 import easyocr
 import re
+# util.py 상단에 추가
+SCOPES = ['https://mail.google.com/']
 
 
 # ────────────── Gmail API 인증 ──────────────
@@ -199,13 +201,18 @@ def clean_duplicate_blocks(body_html):
     body_html = re.sub(r'(<br>\s*){2,}', '<br>', body_html, flags=re.I)
     return body_html.strip()
 
-def resend_mail_removing_images(msg: email.message.Message, attach_summaries: list[str], inline_summaries: list[str]) -> None:
-    import re
+import re
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import re
+
+def resend_mail_removing_images(msg: email.message.Message, attach_summaries: list[str], inline_summaries: list[str], user_email: str, app_password: str) -> None:
+    # 제목 처리
     subject_raw = decode_mime_words(msg.get("Subject", "(제목 없음)"))
-    # 제목 중복 완전 제거
     subject = re.sub(r'(\[재전송 요약\][ ]*)+', '', subject_raw).strip()
     subject = "[재전송 요약] " + subject
 
+    # 원본 정보
     from_addr = decode_mime_words(msg.get("From", ""))
     to_addr   = decode_mime_words(msg.get("To", ""))
     cc_addr   = decode_mime_words(msg.get("Cc", ""))
@@ -220,7 +227,7 @@ def resend_mail_removing_images(msg: email.message.Message, attach_summaries: li
         top_info += f"[원본 Bcc: {bcc_addr}]<br>"
     top_info += "</b></div><br>"
 
-    # 요약구역 준비
+    # 요약정보 HTML
     summary_html = ""
     summaries_all = (attach_summaries or []) + (inline_summaries or [])
     if summaries_all:
@@ -229,35 +236,31 @@ def resend_mail_removing_images(msg: email.message.Message, attach_summaries: li
             summary_html += s.replace("\n", "<br>") + "<br>"
         summary_html += "</div>"
 
-    # 본문(이미지/인라인 제거) 후 중복 안내/요약구역/첨부구역 모두 삭제!
+    # 본문 처리 및 중복 제거
     new_html_body, _ = process_body_with_inline_images_and_remove(msg)
     new_html_body = clean_duplicate_blocks(new_html_body)
 
-    # 맨 위에 안내/요약/본문 딱 한 번만
+    # 전체 HTML 생성
     full_html = f"<div><b>[재전송 요약] {subject}</b></div><br>{top_info}{new_html_body}{summary_html}"
 
-    message_id    = msg.get("Message-ID")
-    references    = msg.get("References")
-    in_reply_to   = msg.get("In-Reply-To")
+    # 메시지 ID 및 레퍼런스
+    message_id  = msg.get("Message-ID")
+    references  = msg.get("References")
+    in_reply_to = msg.get("In-Reply-To")
 
+    # 새로운 이메일 객체
     new_msg = MIMEMultipart("alternative")
     new_msg['Subject'] = subject
-    new_msg['From']    = USER_EMAIL
-    new_msg['To']      = USER_EMAIL
-
+    new_msg['From']    = user_email
+    new_msg['To']      = user_email
     if message_id:
         new_msg['In-Reply-To'] = message_id
-        if references:
-            if message_id not in references:
-                new_msg['References'] = references + " " + message_id
-            else:
-                new_msg['References'] = references
-        else:
-            new_msg['References'] = message_id
+        new_msg['References']  = (references + " " + message_id) if references and message_id not in references else references or message_id
 
     new_msg.attach(MIMEText(full_html, 'html', 'utf-8'))
 
+    # SMTP 전송
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(USER_EMAIL, APP_PASSWORD)
+        smtp.login(user_email, app_password)
         smtp.send_message(new_msg)
         print("[INFO] 재전송 완료")
