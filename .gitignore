@@ -1,2 +1,25 @@
+# OAuth and API credentials
+token.pickle
 credentials.json
+client_secret.json
+*.json
+!requirements.json
+
+# Environment files
 .env
+config.ini
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
